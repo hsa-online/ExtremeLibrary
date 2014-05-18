@@ -83,6 +83,8 @@ void elstrLTrim(str *pThis);
 void elstrRTrimChars(str *pThis, char arrChars[], size_t nCountChars);
 void elstrRTrim(str *pThis);
 void elstrTrim(str *pThis);
+void elstrReverse(str *pThis);
+int elstrCompareCStr(str *pThis, const char *sz);
 bool elstrHasPrefixCStr(str *pThis, char *sz);
 bool elstrHasPrefixELStr(str *pThis, str *pStr);
 bool elstrHasSuffixCStr(str *pThis, char *sz);

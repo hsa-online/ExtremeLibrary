@@ -894,10 +894,59 @@ void elstrTrim(str *pThis) {
 }
 
 /**
+ * Reverses the dynamic string (makes "dcba" from "abcd").
+ * @param pThis Dynamic string.
+ */
+void elstrReverse(str *pThis) {
+	if(isNaS(pThis))
+		return;
+
+	if(pThis->nLength == 0)
+		return;
+
+	char *p1 = pThis->szBuf;
+	char *p2 = pThis->szBuf + pThis->nLength - 1;
+	while(p1 < p2) {
+		char ch = *p1;
+		*p1 = *p2;
+		*p2 = ch;
+		p1++;
+		p2--;
+	}
+}
+
+/**
+ * Compares the dynamic string with a C style string.
+ * @param  pThis Dynamic string.
+ * @param  sz    C style string to compare with.
+ * @return       -1 if dynamic string is less than C style string, 0 if strings
+ * are equal, 1 if dynamic string is greater than C style string. If by some 
+ * reason it's not possible to compare strings, returns 0xFF.
+ */
+int elstrCompareCStr(str *pThis, const char *sz) {
+	if(isNaS(pThis))
+		return 0xFF;
+
+	if(sz == NULL) {
+		return 0xFF;
+	}
+	size_t nLen = strlen(sz);
+	int nMin = pThis->nLength < nLen ? pThis->nLength : nLen;
+	int nRes = memcmp(pThis->szBuf, sz, nMin);
+	if(nRes == 0) {
+		if(pThis->nLength < nLen)
+			nRes = -1;
+		else
+			nRes = pThis->nLength == nLen ? 0 : 1;
+	}
+	return nRes;
+}
+
+/**
  * Checks if the dynamic string starts from C string (@e sz). Returns true if 
  * yes, otherwise returns false.
  * @param  pThis Dynamic string.
- * @param  sz    Prefix C string.
+ * @param  sz    Prefix C style string.
  * @return       True if the dynamic string starts from a specified prefix.
  */
 bool elstrHasPrefixCStr(str *pThis, char *sz) {
