@@ -31,13 +31,14 @@ Good idea to not forget to destroy our string:
 elstrDestroy(pStr);
 ```
 
-Also If dynamic string is created using any elstrCreateXX routine except the 
+Also if dynamic string is created using any elstrCreateXX routine except the 
 elstrCreateFixed() it becomes "variable size" dynamic string. This means that 
 the buffer size is allocated "when necessary" and may grow.
  
-Fixed strings use buffers preallocated externally and are unable to grow. 
-These strings are extremely helpful when data locality is important so they
-may work much faster in some circumstances. 
+Fixed strings can be created with elstrCreateFixed(). They use buffers preallocated
+externally so they can't grow. These strings are extremely helpful when data locality
+is important. They may work much faster than their "variable size" counterparts in 
+some circumstances. 
 
 ## Changelog ##
 
