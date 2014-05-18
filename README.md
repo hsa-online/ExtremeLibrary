@@ -7,9 +7,21 @@ To create new dynamic string from C style string use:
 ```C
 str *pStr = elstrCreateFromCStr("Parrot Peter picked a pack of pickled peppers");
 ```
-To append C style string to existing dynamic string: 
+Now do some more things with our string: 
 ```C
 elstrAppendCStr(pStr, "!!!");
+elstrPrependCStr(pStr, "*** ");
+elstrAppendCStr(pStr, " ***");
+elstrInsertCStr(pStr, 11, "\"");
+elstrInsertCStr(pStr, 17, "\"");
+```
+And check what we got:
+```C
+printf("\"%s\"\n", elstrGetRawBuf(pStr));
+```
+
+```
+"*** Parrot "Peter" picked a pack of pickled peppers!!! ***"
 ```
 
 ## Changelog ##
