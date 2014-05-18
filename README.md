@@ -26,7 +26,7 @@ printf("\"%s\"\n", elstrGetRawBuf(pStr));
 
 Many other functions are supported (Delete, Format, Trim, Split and etc. etc.).
 
-Good idea to not forget to destroy our string:
+Good idea is to not forget to destroy our string:
 ```C
 elstrDestroy(pStr);
 ```
