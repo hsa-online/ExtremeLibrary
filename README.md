@@ -1,7 +1,7 @@
 ExtremeLibrary is a **pure C** library containing helpful (I hope) utility routines for C programmers.
 Now the "Dynamic strings" part of the library is released.
 
-### Description ###
+## Description ##
 
 To create new dynamic string from C style string use: 
 ```C
@@ -40,7 +40,7 @@ externally so they can't grow. These strings are extremely helpful when data loc
 is important. They may work much faster than their "variable size" counterparts in 
 some circumstances. 
 
-## Names of the functions ##
+### Names of the functions ###
 
 A lot of library functions work both with parameters provided as *dynamic strings* 
 and *C style strings*. So to make library functions self-descriptive their names 
@@ -50,15 +50,15 @@ include short description of parameter type:
 
 - `ELStr` means *dynamic string* is expected as parameter.
 
-## Changelog ##
+### Changelog ###
 
 - **v1.0.0**, *18 May 2014*
   - Initial release.
 
-## Library usage ##
+### Library usage ###
 
 Just add source files to your project.
 
-## Documentation ##
+### Documentation ###
 
 Source code contains documentation comments so it's easy to build docs via [Doxygen](www.doxygen.org).
