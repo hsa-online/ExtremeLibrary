@@ -46,14 +46,15 @@ typedef struct str {
 } str;
 
 void elstrArrayELStrDestroy(str **pStrings, size_t nCountStrings);
+size_t elstrMBGetMaxLength();
 
 str *elstrCreateEmpty();
 str *elstrCreateEmptyWithCapacity(size_t nCapacity);
-str *elstrCreateFromCStr(char *sz);
+str *elstrCreateFromCStr(const char *sz);
 str *elstrCreateFromELStr(str *pStr);
-str *elstrCreateFromCSubStr(char *sz, int nIndex, size_t nCount);
+str *elstrCreateFromCSubStr(const char *sz, int nIndex, size_t nCount);
 str *elstrCreateFromELSubStr(str *pStr, int nIndex, size_t nCount);
-str *elstrCreateFromFileCStr(char *szFullName);
+str *elstrCreateFromFileCStr(const char *szFullName);
 str *elstrCreateFromFileELStr(str *pStr);
 str *elstrCreateFixed(char *szBufferToUse, size_t nCapacity);
 void elstrDestroy(str *pThis);
@@ -61,13 +62,14 @@ void elstrEnsureCapacity(str *pThis, size_t nCapacity);
 void elstrRemoveExtraCapacity(str *pThis);
 bool elstrIsEmpty(str *pThis);
 size_t elstrGetLength(str *pThis);
+size_t elstrMBGetLength(str *pThis);
 void elstrSetLength(str *pThis, size_t nLength);
 void elstrClear(str *pThis);
 size_t elstrGetCapacity(str *pThis);
 size_t elstrGetUnused(str *pThis);
-char *elstrGetRawBuf(str *pThis);
+const char *elstrGetRawBuf(str *pThis);
 str *elstrSubString(str *pThis, int nIndex, size_t nCount);
-void elstrAssignFromCStr(str *pThis, char *sz);
+void elstrAssignFromCStr(str *pThis, const char *sz);
 void elstrAssignFromELStr(str *pThis, str *pStr);
 void elstrAppendCStr(str *pThis, char *sz);
 void elstrAppendELStr(str *pThis, str *pStr);

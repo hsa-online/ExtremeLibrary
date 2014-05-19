@@ -19,9 +19,15 @@
 #include <string.h>
 #include <stdio.h> 
 #include <stdarg.h>
+#include <wchar.h>
+#include <stdint.h>
 
 #include "el_str.h"
 
+/**
+ * "Number of bits in @e str.nExtra used by flags.
+ */
+#define EL_STR_NUM_FLAGS	2
 /**
  * "Not A String" flag.
  */
@@ -31,12 +37,18 @@
  */
 #define EL_STR_FLAG_FIXED	2
  
+#define EL_STR_MB_LENGTH_MAX (SIZE_MAX >> EL_STR_NUM_FLAGS)
+
 #define isNaS(s) (((s)->nExtra & EL_STR_FLAG_NAS) == EL_STR_FLAG_NAS)
 #define isFixed(s) (((s)->nExtra & EL_STR_FLAG_FIXED) == EL_STR_FLAG_FIXED)
 #define makeNaS(s) { \
     if(!isFixed(s) && (s)->szBuf != NULL) \
     	{ free((s)->szBuf); (s)->szBuf = NULL; }\
  	(s)->nExtra |= EL_STR_FLAG_NAS; }
+#define setMBLength(s, nLength) (s)->nExtra |= ((nLength) << EL_STR_NUM_FLAGS)
+#define getMBLength(s) ((s)->nExtra >> EL_STR_NUM_FLAGS)
+#define clearMBLength(s) (s)->nExtra &= \
+ 	~(EL_STR_MB_LENGTH_MAX << EL_STR_NUM_FLAGS)
 
 /**
  * Creates new empty string with minimal possible capacity.
@@ -77,7 +89,7 @@ str *elstrCreateEmptyWithCapacity(size_t nCapacity) {
  * @param  sz The C string to copy data from.
  * @return    Newly created dynamic string (or NULL if an error occured).
  */
-str *elstrCreateFromCStr(char *sz) {
+str *elstrCreateFromCStr(const char *sz) {
 	if(sz == NULL)
 		return NULL;
 
@@ -130,12 +142,12 @@ str *elstrCreateFromELStr(str *pStr) {
 /**
  * Creates new string and initializes it with substring of the specified 
  * C string.
- * @param  sz     The C string to copy data from.
+ * @param  sz     The C style string to copy data from.
  * @param  nIndex An index of the fisrt byte to be copied.
  * @param  nCount Number of bytes to copy.
  * @return        Newly created dynamic string (or NULL if an error occured).
  */
-str *elstrCreateFromCSubStr(char *sz, int nIndex, size_t nCount) {
+str *elstrCreateFromCSubStr(const char *sz, int nIndex, size_t nCount) {
 	if(sz == NULL)
 		return NULL;
 	size_t nLen = strlen(sz);
@@ -211,7 +223,7 @@ str *elstrCreateFromELSubStr(str *pStr, int nIndex, size_t nCount) {
  * @return            Newly created dynamic string (or NULL if an error 
  * occured).
  */
-str *elstrCreateFromFileCStr(char *szFullName) {
+str *elstrCreateFromFileCStr(const char *szFullName) {
 	if(szFullName == NULL)
 		return NULL;
 	size_t nLen = strlen(szFullName);
@@ -396,6 +408,49 @@ size_t elstrGetLength(str *pThis) {
 	return pThis->nLength;
 }
 
+/**
+ * Returns the length of dynamic string containing multibyte characters.
+ * @param  pThis Dynamic string.
+ * @return       Length of the string in characters.
+ */
+size_t elstrMBGetLength(str *pThis) {
+	if(isNaS(pThis))
+		return 0;
+	if(pThis->nLength == 0)
+		return 0;
+
+	size_t nLength = getMBLength(pThis);
+	if(nLength != 0)
+		return nLength;
+	
+	mbstate_t mbs;
+	mbrlen(NULL, 0, &mbs);
+
+	char *szBuf = pThis->szBuf;
+	int nMax = pThis->nLength;
+	while(nMax > 0) {
+		size_t nLengthCur = mbrlen(szBuf, nMax, &mbs);
+		if(nLengthCur == (size_t)(0) || nLengthCur == (size_t)(-1) || 
+			nLengthCur == (size_t)(-2)) {
+
+			makeNaS(pThis);
+			return 0;
+		}
+		szBuf += nLengthCur;
+		nMax -= nLengthCur;
+		nLength++;
+	}
+
+	if(nLength > EL_STR_MB_LENGTH_MAX) {
+		makeNaS(pThis);
+		return 0;
+	}
+
+	setMBLength(pThis, nLength);
+
+	return nLength;
+}
+
 /** 
  * Take with care!!!<br>
  * Ensures the string has enough space to hold at least @e nLength bytes.
@@ -455,14 +510,13 @@ size_t elstrGetUnused(str *pThis) {
 
 /**
  * Take with care!!!<br>
- * Returns pointer to the data buffer of dynamic string. Do not write more than 
+ * Returns constant pointer to the data buffer of dynamic string. Do not write more than 
  * elstrGetCapacity() - 1 bytes to the buffer (-1 is to reserve place for 
- * '\\0'). Call elstrSetLength() with proper length value after buffer changing.
- * value of length after writing.
+ * '\\0'). Do not modify any data in the buffer returned.
  * @param  pThis Dynamic string.
  * @return       Pointer to the data buffer of dynamic string.
  */
-char *elstrGetRawBuf(str *pThis) {
+const char *elstrGetRawBuf(str *pThis) {
 	if(isNaS(pThis))
 		return NULL;
 	return pThis->szBuf;
@@ -487,7 +541,7 @@ str *elstrSubString(str *pThis, int nIndex, size_t nCount) {
  * @param pThis Dynamic string.
  * @param sz    C string to get the data from.
  */
-void elstrAssignFromCStr(str *pThis, char *sz) {
+void elstrAssignFromCStr(str *pThis, const char *sz) {
 	if(isNaS(pThis))
 		return;
 
@@ -1182,4 +1236,13 @@ void elstrArrayELStrDestroy(str **pStrings, size_t nCountStrings) {
 			elstrDestroy(pStrings[i]);
 		free(pStrings);
 	}
+}
+
+/**
+ * Returns the maximal number of multibyte characters the dynamic string may 
+ * hold.
+ * @return Maximal number of multibyte characters the dynamic string may hold.
+ */
+size_t elstrMBGetMaxLength() {
+	return EL_STR_MB_LENGTH_MAX;
 }
