@@ -315,7 +315,10 @@ str *elstrCreateFixed(char *szBufferToUse, size_t nCapacity) {
  * @param pThis Dynamic string to be destroyed.
  */
 void elstrDestroy(str *pThis) {
-	if(pThis->szBuf != NULL) 
+	if(pThis == NULL)
+		return;
+
+	if(!isFixed(pThis) && pThis->szBuf != NULL) 
 		free(pThis->szBuf);
 	free(pThis);	
 }

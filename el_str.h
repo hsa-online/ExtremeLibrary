@@ -18,6 +18,7 @@
 #ifndef _EL_STR_H_
 #define _EL_STR_H_
 
+#include <stdlib.h>
 #include <stdbool.h>
 
 #ifdef __cplusplus
