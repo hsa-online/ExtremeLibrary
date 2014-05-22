@@ -32,18 +32,30 @@ extern "C" {
  * elstrCreateFixed() it becomes "variable size" dynamic string. This means that 
  * the buffer size is allocated "when necessary" and may grow.
  *
- * Fixed strings use buffers preallocated externally and are unable to grow. 
- * These strings are extremely helpful when data locality is important so they
- * may work much faster in some circumstances. 
+ * @b Fixed dynamic string uses the data buffer allocated externally and is 
+ * unable to grow. These strings are extremely helpful when data locality is 
+ * important so they may work much faster in some circumstances. 
+ *
+ * @b Preallocated dynamic string uses "str" structures allocated externally. 
+ * If the data buffer is not fixed - such string may grow, otherwise not.
+ * When it's necessary to work with groups having known (and unchanged) amount 
+ * of strings this allows to fine tune data locality.
+ *
+ * And finally: ALL MEMORY used by @b fixed and @b preallocated dynamic string 
+ * is allocated externally so such string offers maximum of data locality and 
+ * minimizes the memory manager working load.
  */
 typedef struct str {
 	size_t nLength; /**< Length of the string (in bytes). */
 	size_t nCapacity; /**< Amount of memory allocated for the data buffer 
 	(in bytes). */
-	size_t nExtra; /**< Two low order bits are now used for flags. All the rest 
-	is reserved to support strings in multibyte encoding. */
+	size_t nExtra; /**< Three low order bits are now used for flags. High order 
+	bits hold the length of string in multibyte characters. */
  	char *szBuf; /**< The data buffer itself. */
 } str;
+
+#define EL_STR_ERR_WRONG_STRING	3
+#define EL_STR_ERR_WRONG_PARAM	4
 
 void elstrArrayELStrDestroy(str **pStrings, size_t nCountStrings);
 size_t elstrMBGetMaxLength();
@@ -56,7 +68,11 @@ str *elstrCreateFromCSubStr(const char *sz, int nIndex, size_t nCount);
 str *elstrCreateFromELSubStr(str *pStr, int nIndex, size_t nCount);
 str *elstrCreateFromFileCStr(const char *szFullName);
 str *elstrCreateFromFileELStr(str *pStr);
-str *elstrCreateFixed(char *szBufferToUse, size_t nCapacity);
+str *elstrCreateEmptyFixed(char *szBufferToUse, size_t nCapacity);
+str *elstrCreateEmptyPreallocFixed(void *p, char *szBufferToUse, 
+	size_t nCapacity);
+str *elstrCreateEmptyPrealloc(void *p);
+str *elstrCreateEmptyPreallocWithCapacity(void *p, size_t nCapacity);
 void elstrDestroy(str *pThis);
 void elstrEnsureCapacity(str *pThis, size_t nCapacity);
 void elstrRemoveExtraCapacity(str *pThis);
@@ -81,6 +97,7 @@ void elstrAppendPrintfCStrFormat(str *pThis, const char *cszFormat, ...);
 void elstrAppendPrintfELStrFormat(str *pThis, str *pStrFormat, ...);
 void elstrInsertCStr(str *pThis, int nIndex, char *sz);
 void elstrDelete(str *pThis, int nIndex, size_t nCount);
+size_t elstrDeleteChar(str *pThis, char ch);
 void elstrLTrimChars(str *pThis, char arrChars[], size_t nCountChars);
 void elstrLTrim(str *pThis);
 void elstrRTrimChars(str *pThis, char arrChars[], size_t nCountChars);
@@ -88,6 +105,7 @@ void elstrRTrim(str *pThis);
 void elstrTrim(str *pThis);
 void elstrReverse(str *pThis);
 int elstrCompareCStr(str *pThis, const char *sz);
+bool elstrIsEqualToELStr(str *pThis, str *pStr);
 bool elstrHasPrefixCStr(str *pThis, char *sz);
 bool elstrHasPrefixELStr(str *pThis, str *pStr);
 bool elstrHasSuffixCStr(str *pThis, char *sz);
@@ -98,6 +116,8 @@ str **elstrSplitByChars(str *pThis, char arrChars[], size_t nCountChars,
 	bool bRemoveEmpty, size_t *pCountSubstrings);
 str **elstrSplitByCharsNoEmpty(str *pThis, char arrChars[], size_t nCountChars, 
 	size_t *pCountSubstrings);
+size_t elstrMBCreateNGrams(str *pThis, size_t nN, void *pNGrams, 
+	size_t nSize, size_t *pCountNGrams);
 
 #ifdef __cplusplus
 }

@@ -25,22 +25,30 @@
 #include "el_str.h"
 
 /**
- * "Number of bits in @e str.nExtra used by flags.
+ * Number of bits in @e str.nExtra used by flags.
  */
-#define EL_STR_NUM_FLAGS	2
+#define EL_STR_NUM_FLAGS		3
 /**
  * "Not A String" flag.
  */
-#define EL_STR_FLAG_NAS		1
+#define EL_STR_FLAG_NAS			1
 /**
- * "String uses a fixed buffer" flag.
+ * "String uses a fixed buffer" flag (string data buffer is externally 
+ * allocated).
  */
-#define EL_STR_FLAG_FIXED	2
+#define EL_STR_FLAG_FIXED		2
+/**
+ * "String structure is preallocated" flag ("str" structure is externally 
+ * allocated).
+ */
+#define EL_STR_FLAG_PREALLOC	4
  
 #define EL_STR_MB_LENGTH_MAX (SIZE_MAX >> EL_STR_NUM_FLAGS)
 
 #define isNaS(s) (((s)->nExtra & EL_STR_FLAG_NAS) == EL_STR_FLAG_NAS)
 #define isFixed(s) (((s)->nExtra & EL_STR_FLAG_FIXED) == EL_STR_FLAG_FIXED)
+#define isPreallocated(s) (((s)->nExtra & EL_STR_FLAG_PREALLOC) == \
+ 	EL_STR_FLAG_PREALLOC)
 #define makeNaS(s) { \
     if(!isFixed(s) && (s)->szBuf != NULL) \
     	{ free((s)->szBuf); (s)->szBuf = NULL; }\
@@ -293,9 +301,10 @@ str *elstrCreateFromFileELStr(str *pStr) {
 }
 
 /**
- * Creates new empty string with a fixed capacity equal to @e nCapacity. Because 
- * the string is "fixed" it will never grow above the @e nCapacity. String will 
- * use the externally allocated memory buffer which must be provided.
+ * Creates new empty string with a @b fixed capacity equal to @e nCapacity. 
+ * Because the string is "fixed" it will never grow above the @e nCapacity. 
+ * String will use the externally allocated memory buffer which must be 
+ * provided.
  * @param  szBufferToUse Pointer to memory buffer where string will hold its 
  * data. Buffer must exist all the string lifetime. Size of the buffer must be 
  * not less than @e nCapacity of bytes.
@@ -305,7 +314,7 @@ str *elstrCreateFromFileELStr(str *pStr) {
  * @return               Newly created dynamic string (or NULL if an error 
  * occured).
  */
-str *elstrCreateFixed(char *szBufferToUse, size_t nCapacity) {
+str *elstrCreateEmptyFixed(char *szBufferToUse, size_t nCapacity) {
 	if(szBufferToUse == NULL || nCapacity == 0) 
 		return NULL;
 
@@ -323,6 +332,75 @@ str *elstrCreateFixed(char *szBufferToUse, size_t nCapacity) {
 }
 
 /**
+ * Creates new empty preallocated dynamic string. Uses externally allocated 
+ * buffer to hold the "str" structure. String capacity is @b fixed and is equal 
+ * to @e nCapacity. Because the string is "fixed" it will never grow above 
+ * the @e nCapacity. String will use the externally allocated memory buffer to
+ * hold its data.
+ * @param  p             Pointer to memory buffer where the "str" structure will
+ * be placed. 
+ * @param  szBufferToUse Pointer to memory buffer where string will hold its 
+ * data. Buffer must exist all the string lifetime. Size of the buffer must be 
+ * not less than @e nCapacity of bytes.
+ * @param  nCapacity     String fixed capacity in bytes. <br> Note that 
+ * specifying @e nCapacity=1 creates string which won't be able to hold any 
+ * data. 
+ * @return               Newly created dynamic string (or NULL if an error 
+ * occured).
+ */
+str *elstrCreateEmptyPreallocFixed(void *p, char *szBufferToUse, 
+	size_t nCapacity) {
+
+	if(p == NULL || szBufferToUse == NULL || nCapacity == 0) 
+		return NULL;
+
+	str *pThis = p;
+
+	pThis->szBuf = szBufferToUse;
+	pThis->nCapacity = nCapacity;
+	pThis->nExtra = EL_STR_FLAG_PREALLOC | EL_STR_FLAG_FIXED;
+
+	elstrSetLength(pThis, 0);
+
+	return pThis;
+}
+
+/**
+ * Creates new empty preallocated dynamic string. Uses externally allocated 
+ * buffer to hold the "str" structure.
+ * @param  p Pointer to memory buffer where the "str" structure will be placed. 
+ * Size of this buffer should be equal to sizeof(str).
+ * @return   Newly created dynamic string (or NULL if an error occured).
+ */
+str *elstrCreateEmptyPrealloc(void *p) {
+	return elstrCreateEmptyPreallocWithCapacity(p, 1);
+}
+/**
+ * Creates new empty preallocated dynamic string with a specified capacity. Uses 
+ * externally allocated buffer to hold the "str" structure.
+ * @param  p         Pointer to memory buffer where the "str" structure will be 
+ * placed.
+ * @param  nCapacity String capacity in bytes.
+ * @return           Newly created dynamic string (or NULL if an error occured).
+ */
+str *elstrCreateEmptyPreallocWithCapacity(void *p, size_t nCapacity) {
+	if(p == NULL || nCapacity == 0) 
+		return NULL;
+
+	str *pThis = p;
+
+	elstrEnsureCapacity(pThis, nCapacity);
+	if(isNaS(pThis)) {
+		return NULL;
+	}
+	pThis->nExtra |= EL_STR_FLAG_PREALLOC;
+
+	elstrSetLength(pThis, 0);
+
+	return pThis;
+}
+
+/**
  * Destroys the dynamic string.
  * @param pThis Dynamic string to be destroyed.
  */
@@ -332,7 +410,8 @@ void elstrDestroy(str *pThis) {
 
 	if(!isFixed(pThis) && pThis->szBuf != NULL) 
 		free(pThis->szBuf);
-	free(pThis);	
+	if(!isPreallocated(pThis)) 
+		free(pThis);	
 }
 
 /**
@@ -422,12 +501,13 @@ size_t elstrMBGetLength(str *pThis) {
 	size_t nLength = getMBLength(pThis);
 	if(nLength != 0)
 		return nLength;
-	
+
 	mbstate_t mbs;
-	mbrlen(NULL, 0, &mbs);
+	// mbrlen(NULL, 0, &mbs); - doesn't work in CentOS 6.5
+	memset(&mbs, 0, sizeof(mbstate_t));
 
 	char *szBuf = pThis->szBuf;
-	int nMax = pThis->nLength;
+	size_t nMax = pThis->nLength;
 	while(nMax > 0) {
 		size_t nLengthCur = mbrlen(szBuf, nMax, &mbs);
 		if(nLengthCur == (size_t)(0) || nLengthCur == (size_t)(-1) || 
@@ -470,6 +550,8 @@ void elstrSetLength(str *pThis, size_t nLength) {
 
 	pThis->nLength = nLength;
 	pThis->szBuf[pThis->nLength] = '\0';
+
+	clearMBLength(pThis);
 }
 
 // 
@@ -857,6 +939,36 @@ void elstrDelete(str *pThis, int nIndex, size_t nCount) {
 }
 
 /**
+ * Removes from the dynamic string all ocuurences of the specified character.
+ * @param pThis Dynamic string.
+ * @param ch    Character which occurences need to be removed.
+ * @return      Number of removed characters.
+ */
+size_t elstrDeleteChar(str *pThis, char ch) {
+	if(isNaS(pThis))
+		return 0;
+
+	if(pThis->nLength == 0)
+		return 0;
+
+	size_t nRemoved = 0;
+	char *pDest = pThis->szBuf;
+	char *pSrc = pDest;
+	while(pSrc - pThis->szBuf < pThis->nLength) {
+		if(*pSrc != ch) {
+			*pDest = *pSrc;
+			pDest++;
+		} else
+			nRemoved++;
+		pSrc++;
+	}
+
+	elstrSetLength(pThis, pThis->nLength - nRemoved);
+
+	return nRemoved;
+}
+
+/**
  * Removes specified leading characters from the dynamic string.
  * @param pThis       Dynamic string.
  * @param arrChars    An array of characters to be removed.
@@ -978,15 +1090,16 @@ void elstrReverse(str *pThis) {
  * @param  sz    C style string to compare with.
  * @return       -1 if dynamic string is less than C style string, 0 if strings
  * are equal, 1 if dynamic string is greater than C style string. If by some 
- * reason it's not possible to compare strings, returns 0xFF.
+ * reason it's not possible to compare strings due to errors, returns 
+ * EL_STR_ERR_WRONG_STRING or EL_STR_ERR_WRONG_PARAM.
  */
 int elstrCompareCStr(str *pThis, const char *sz) {
 	if(isNaS(pThis))
-		return 0xFF;
+		return EL_STR_ERR_WRONG_STRING;
 
-	if(sz == NULL) {
-		return 0xFF;
-	}
+	if(sz == NULL)
+		return EL_STR_ERR_WRONG_PARAM;
+
 	size_t nLen = strlen(sz);
 	int nMin = pThis->nLength < nLen ? pThis->nLength : nLen;
 	int nRes = memcmp(pThis->szBuf, sz, nMin);
@@ -997,6 +1110,26 @@ int elstrCompareCStr(str *pThis, const char *sz) {
 			nRes = pThis->nLength == nLen ? 0 : 1;
 	}
 	return nRes;
+}
+
+/**
+ * Checks if the dynamic string is equal to another dynamixc string.
+ * @param  pThis Dynamic string.
+ * @param  pStr  Dynamic string to check equality with.
+ * @return       True if the dynamic string is equal to another one, otherwise 
+ * false.
+ */
+bool elstrIsEqualToELStr(str *pThis, str *pStr) {
+	if(isNaS(pThis))
+		return false;
+
+	if(pStr == NULL || isNaS(pStr))
+		return false;
+
+	if(pThis->nLength != pStr->nLength) 
+		return false;
+
+	return memcmp(pThis->szBuf, pStr->szBuf, pStr->nLength) == 0;
 }
 
 /**
@@ -1146,14 +1279,14 @@ str **elstrSplitByChars(str *pThis, char arrChars[], size_t nCountChars,
 		return NULL;
 	
 	int nCapacitySubstr = 2;
-	str **pSubstr = malloc(sizeof(str) * nCapacitySubstr);
+	str **pSubstr = malloc(sizeof(str*) * nCapacitySubstr);
 	if (pSubstr == NULL) 
 		return NULL;
 
 	int nCountSubstr = 0;
 	int nStart = 0;
 
-	for(int i = 0; i < pThis->nLength; i++) {
+	for(size_t i = 0; i < pThis->nLength; i++) {
 		bool bSplit = false;
 		int j;
 		for(j = 0; j < nCountChars; j++)
@@ -1166,7 +1299,7 @@ str **elstrSplitByChars(str *pThis, char arrChars[], size_t nCountChars,
 			if (nCapacitySubstr < nCountSubstr + 2) {
 				nCapacitySubstr *= 2;
 				str **pSubstrNew = realloc(pSubstr, 
-					sizeof(str) * nCapacitySubstr);
+					sizeof(str*) * nCapacitySubstr);
 				if (pSubstrNew == NULL) {
 					for (int j = 0; j < nCountSubstr; j++) 
 						elstrDestroy(pSubstr[j]);
@@ -1226,14 +1359,192 @@ str **elstrSplitByCharsNoEmpty(str *pThis, char arrChars[], size_t nCountChars,
 }
 
 /**
+ * Creates an array of N-Grams from the dynamic string. If memory for the array 
+ * is allocated by this function it should later be freed by 
+ * elstrArrayELStrDestroy().
+ * @param  pThis        Dynamic string.
+ * @param  nN           Value of N (for N-Gram).
+ * @param  pNGramsArr   Pointer to an array of pointers to N-Grams. An array of 
+ * N-Grams is returned here. If NULL is passed, an array is not created but 
+ * just an amount of memory required is calculated and returned.
+ * @param  nSize        If the memory for the array is already allocated, nSize
+ * must be equal to buffer size (in bytes) otherwise it should be 0.
+ * @param  pCountNGrams Number of generated N-Grams is returned here.
+ * @return              Number of bytes used to store all N-Gram strings 
+ * (sizeof(str*) + sizeof(str*) + NGram[i]->Capacity) * nCountNGrams). 
+ */
+size_t elstrMBCreateNGrams(str *pThis, size_t nN, void *pNGramsArr, 
+	size_t nSize, size_t *pCountNGrams) {
+
+	*pCountNGrams = 0;
+
+	if(isNaS(pThis))
+		return 0;
+
+	if(pThis->nLength == 0 || nN == 0)
+		return 0;
+
+	size_t nMBLength = elstrMBGetLength(pThis);
+	if(isNaS(pThis))
+		return 0;
+	if(nMBLength == 0)
+		return 0;
+
+	if(nN >= nMBLength)
+		*pCountNGrams = 1;
+	else
+		*pCountNGrams = nMBLength - (nN -1);
+
+	if(nSize > 0 && nSize <= sizeof(str) * *pCountNGrams)
+		return 0;
+
+	str **pNGrams = NULL;
+	char *szDataBufStart = NULL;
+	char *szDataBuf = NULL;
+	size_t nDataBufSize = 0;
+	str* pStrCur = NULL;
+	if(pNGramsArr != NULL) {
+		if(nSize == 0) {
+			pNGrams = malloc(sizeof(str*) * *pCountNGrams);
+			if (pNGrams == NULL) 
+				return 0;
+			*((str***)pNGramsArr) = pNGrams;
+		} else {
+			// Buffer layout:
+			//   (Pointers to str) * nCountNGrams
+			//   str * nCountNGrams
+			//   data buffers
+			str **pPointers = *((str***)pNGramsArr);
+			pStrCur = (str*)((char*)pPointers + sizeof(char*) * *pCountNGrams);
+			for(size_t i = 0; i < *pCountNGrams; i++)
+				pPointers[i] = &pStrCur[i];
+			szDataBufStart = (char*)&pStrCur[*pCountNGrams];
+			szDataBuf = szDataBufStart;
+			nDataBufSize = nSize - (szDataBufStart - (char*)pPointers);
+		}
+	}
+
+	size_t nMemTotal = sizeof(str*) * *pCountNGrams;
+
+	mbstate_t mbs;
+	// mbrlen(NULL, 0, &mbs); - doesn't work in CentOS 6.5
+	memset(&mbs, 0, sizeof(mbstate_t));
+
+	char *szBuf = pThis->szBuf;
+	size_t nMax = pThis->nLength;
+
+	char *szNGramStart = szBuf;
+	char *szNGramStartNext = NULL;
+
+	size_t nLengthExtra = 0;
+	size_t nMBCharsCount = 0;
+	size_t nNGramsCount = 0;
+
+	while(nMax != 0) {
+		size_t nLengthCur = mbrlen(szBuf, nMax, &mbs);
+		
+		if(nLengthCur == (size_t)(0) || nLengthCur == (size_t)(-1) || 
+			nLengthCur == (size_t)(-2)) {
+
+			if(pNGramsArr != NULL) {
+				if(nSize == 0) {
+					for (int j = 0; j < nNGramsCount; j++) 
+						elstrDestroy(pNGrams[j]);
+					free(pNGrams);
+				}
+			}
+
+			makeNaS(pThis);
+			return 0;
+		}
+		szBuf += nLengthCur;
+		nMax -= nLengthCur;
+		nMBCharsCount++;
+
+		if(nMBCharsCount == 1) {
+			szNGramStartNext = szBuf;
+			nLengthExtra = 0;
+		} else {
+			nLengthExtra += nLengthCur;
+		}
+
+		if(nMBCharsCount == nN) {
+			size_t nLength = szBuf - szNGramStart;
+			if(pNGramsArr != NULL) {
+				if(nSize == 0) {
+					pNGrams[nNGramsCount] = elstrCreateFromELSubStr(pThis, 
+						szNGramStart - pThis->szBuf, nLength);
+					if(pNGrams[nNGramsCount] == NULL) {
+						for (int j = 0; j < nNGramsCount; j++) 
+							elstrDestroy(pNGrams[j]);
+						free(pNGrams);
+
+						return 0;
+					}
+				} else {
+					if(szDataBuf - szDataBufStart + nLength + 1 > nDataBufSize)
+						return 0;
+					elstrCreateEmptyPreallocFixed(&pStrCur[nNGramsCount], 
+						szDataBuf, nLength + 1);
+
+					memcpy(pStrCur[nNGramsCount].szBuf, szNGramStart, nLength);
+					elstrSetLength(&pStrCur[nNGramsCount], nLength);
+					szDataBuf += nLength + 1;
+				}
+			} 
+			nMemTotal += sizeof(str) + nLength + 1;
+			nNGramsCount++;
+
+			if(nMax != 0) {
+				szBuf = szNGramStartNext;
+				nMax += nLengthExtra;
+				szNGramStart = szBuf;
+			}
+
+			nMBCharsCount = 0;
+		}
+	}
+
+	if(nMBCharsCount != 0) {
+		size_t nLength = szBuf - szNGramStart;
+		if(pNGramsArr != NULL) {
+			if(nSize == 0) {
+				pNGrams[nNGramsCount] = elstrCreateFromELSubStr(pThis, 
+					szNGramStart - pThis->szBuf, nLength);
+				if(pNGrams[nNGramsCount] == NULL) {
+					for (int j = 0; j < nNGramsCount; j++) 
+						elstrDestroy(pNGrams[j]);
+					free(pNGrams);
+
+					return 0;
+				}
+			} else {
+				if(szDataBuf - szDataBufStart + nLength + 1 > nDataBufSize)
+					return 0;
+				elstrCreateEmptyPreallocFixed(&pStrCur[nNGramsCount], 
+					szDataBuf, nLength + 1);
+				memcpy(pStrCur[nNGramsCount].szBuf, szNGramStart, nLength);
+				elstrSetLength(&pStrCur[nNGramsCount], nLength);
+				// szDataBuf += nLength + 1;
+			}
+		} 
+		nMemTotal += sizeof(str) + nLength + 1;
+		// nCountNGrams++;
+	}
+
+	return nMemTotal;
+}
+
+/**
  * Frees an array of ELStrings previously created by elstrSplitByChars().
  * @param pStrings      An array of ELStrings.
  * @param nCountStrings Number of ELStrings in array.
  */
 void elstrArrayELStrDestroy(str **pStrings, size_t nCountStrings) {
 	if(pStrings != NULL) {
-		for (int i = 0; i < nCountStrings; i++) 
+		for (int i = 0; i < nCountStrings; i++) {
 			elstrDestroy(pStrings[i]);
+		}
 		free(pStrings);
 	}
 }
@@ -1246,3 +1557,4 @@ void elstrArrayELStrDestroy(str **pStrings, size_t nCountStrings) {
 size_t elstrMBGetMaxLength() {
 	return EL_STR_MB_LENGTH_MAX;
 }
+
