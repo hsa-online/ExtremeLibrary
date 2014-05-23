@@ -103,7 +103,9 @@ void elstrLTrim(str *pThis);
 void elstrRTrimChars(str *pThis, char arrChars[], size_t nCountChars);
 void elstrRTrim(str *pThis);
 void elstrTrim(str *pThis);
+void elstrTrimChars(str *pThis, char arrChars[], size_t nCountChars);
 void elstrReverse(str *pThis);
+void elstrReplaceChar(str *pThis, char chOld, char chNew);
 int elstrCompareCStr(str *pThis, const char *sz);
 bool elstrIsEqualToELStr(str *pThis, str *pStr);
 bool elstrHasPrefixCStr(str *pThis, char *sz);
@@ -118,6 +120,8 @@ str **elstrSplitByCharsNoEmpty(str *pThis, char arrChars[], size_t nCountChars,
 	size_t *pCountSubstrings);
 size_t elstrMBCreateNGrams(str *pThis, size_t nN, void *pNGrams, 
 	size_t nSize, size_t *pCountNGrams);
+float elstrMBCompareNGrams(str **pNGrams1, size_t nCountNGrams1, 
+	str **pNGrams2, size_t nCountNGrams2);
 
 #ifdef __cplusplus
 }

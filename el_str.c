@@ -1063,6 +1063,18 @@ void elstrTrim(str *pThis) {
 }
 
 /**
+ * Removes specified leading and trailing characters from the dynamic string.
+ * @param pThis       Dynamic string.
+ * @param arrChars    An array of characters to be removed.
+ * @param nCountChars Number of characters in @e arrChars array.
+ */
+void elstrTrimChars(str *pThis, char arrChars[], size_t nCountChars) {
+	// Call RTrimChars first to save little work for LTrim
+	elstrRTrimChars(pThis, arrChars, nCountChars);
+	elstrLTrimChars(pThis, arrChars, nCountChars);
+}
+
+/**
  * Reverses the dynamic string (makes "dcba" from "abcd").
  * @param pThis Dynamic string.
  */
@@ -1082,6 +1094,25 @@ void elstrReverse(str *pThis) {
 		p1++;
 		p2--;
 	}
+}
+
+/**
+ * Replaces in dynamic string all occurences of the specified character with 
+ * new character.
+ * @param pThis Dynamic string.
+ * @param chOld Character to be replaced.
+ * @param chNew Character which should replace @e chOld.
+ */
+void elstrReplaceChar(str *pThis, char chOld, char chNew) {
+	if(isNaS(pThis))
+		return;
+
+	if(pThis->nLength == 0)
+		return;
+
+	for(int i = 0; i < pThis->nLength; i++)
+		if(pThis->szBuf[i] == chOld)
+			pThis->szBuf[i] = chNew;
 }
 
 /**
@@ -1536,6 +1567,49 @@ size_t elstrMBCreateNGrams(str *pThis, size_t nN, void *pNGramsArr,
 }
 
 /**
+ * Compares two arrays of N-Grams returns similarity coefficient from interval 
+ * [0,1]. 0 means N-Gram arrays are completely different. 1 means N-Gram arrays
+ * are completely similar.
+ * 
+ * @param  pNGrams1      First array of N-Grams.
+ * @param  nCountNGrams1 Number of N-Grams in first array.
+ * @param  pNGrams2      Second array of N-Grams.
+ * @param  nCountNGrams2 Number of N-Grams in second array.
+ * @return               Similarity coefficient calculated as: <br>
+ * (MatchesCount(NGrams1 in NGrams2) + MatchesCount(NGrams2 in NGrams1)) / 
+ * (MaxNGramsCount1 + MaxNGramsCount2).
+ */
+float elstrMBCompareNGrams(str **pNGrams1, size_t nCountNGrams1, 
+	str **pNGrams2, size_t nCountNGrams2) {
+	//printf("checking %zu vs. %zu.\n", nCountNGrams1, nCountNGrams2);
+
+	if(pNGrams1 == NULL || nCountNGrams1 == 0 || 
+		pNGrams2 == NULL || nCountNGrams2 == 0)
+		return 0;
+
+	size_t nMatches = 0;
+
+	for (int i = 0; i < nCountNGrams1; i++) {
+		str *pNGram1 = pNGrams1[i];
+		for (int j = 0; j < nCountNGrams2; j++)
+			if(elstrIsEqualToELStr(pNGram1, pNGrams2[j])) {
+				nMatches++;
+				break;
+			}
+	}
+	for (int i = 0; i < nCountNGrams2; i++) {
+		str *pNGram2 = pNGrams2[i];
+		for (int j = 0; j < nCountNGrams1; j++)
+			if(elstrIsEqualToELStr(pNGram2, pNGrams1[j])) {
+				nMatches++;
+				break;
+			}
+	}
+
+	return (nMatches * 1.0f) / (nCountNGrams1 + nCountNGrams2);
+}
+
+/**
  * Frees an array of ELStrings previously created by elstrSplitByChars().
  * @param pStrings      An array of ELStrings.
  * @param nCountStrings Number of ELStrings in array.
@@ -1557,4 +1631,3 @@ void elstrArrayELStrDestroy(str **pStrings, size_t nCountStrings) {
 size_t elstrMBGetMaxLength() {
 	return EL_STR_MB_LENGTH_MAX;
 }
-

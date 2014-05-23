@@ -50,6 +50,31 @@ include short description of parameter type:
 
 - `ELStr` means *dynamic string* is expected as parameter.
 
+Also some basic handling of multibyte strings is supported:
+All functions which names started from `elstrMB` are intended to work with multibyte strings.
+For example it's easy to get the length of multibyte string in characters:
+```
+size_t nMBLength = elstrMBGetLength(pStr);
+```
+Before calling any `elstrMB`-function it's necessary to set the proper locale:
+```
+setlocale(LC_ALL, ...
+```
+
+It's easy to create N-Grams from multibyte strings:
+```
+size_t nCountNGrams;
+str **pNGrams;
+size_t nN = 3;
+size_t nMemTotal = elstrMBCreateNGrams(pStr, nN, &pNGrams, 0, &nCountNGrams);
+```
+Above call creates 3-grams from the dynamic string provided.
+
+N-Grams allowing to compute strings similarity coefficient:
+```
+float fSimilarity = elstrMBCompareNGrams(pNGrams2, pCountNGrams2, pNGrams, pCountNGrams);
+```
+
 ### Changelog ###
 
 - **v1.0.0**, *18 May 2014*
