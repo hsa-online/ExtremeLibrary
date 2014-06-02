@@ -22,6 +22,8 @@
 #include <wchar.h>
 #include <stdint.h>
 
+#include "el_memory.h"
+
 #include "el_str.h"
 
 /**
@@ -51,7 +53,7 @@
  	EL_STR_FLAG_PREALLOC)
 #define makeNaS(s) { \
     if(!isFixed(s) && (s)->szBuf != NULL) \
-    	{ free((s)->szBuf); (s)->szBuf = NULL; }\
+    	{ EL_FREE((s)->szBuf); (s)->szBuf = NULL; }\
  	(s)->nExtra |= EL_STR_FLAG_NAS; }
 #define setMBLength(s, nLength) (s)->nExtra |= ((nLength) << EL_STR_NUM_FLAGS)
 #define getMBLength(s) ((s)->nExtra >> EL_STR_NUM_FLAGS)
@@ -76,13 +78,13 @@ str *elstrCreateEmptyWithCapacity(size_t nCapacity) {
 	if(nCapacity == 0)
 		return NULL;
 
-	str *pThis = calloc(1, sizeof(str));
+	str *pThis = EL_CALLOC(1, sizeof(str));
 	if(pThis == NULL)
 		return NULL;
 
 	elstrEnsureCapacity(pThis, nCapacity);
 	if(isNaS(pThis)) {
-		free(pThis);
+		EL_FREE(pThis);
 		return NULL;
 	}
 
@@ -103,13 +105,13 @@ str *elstrCreateFromCStr(const char *sz) {
 
 	size_t nLen = strlen(sz);
 
-	str *pThis = calloc(1, sizeof(str));
+	str *pThis = EL_CALLOC(1, sizeof(str));
 	if(pThis == NULL)
 		return NULL;
 
 	elstrEnsureCapacity(pThis, nLen + 1);
 	if(isNaS(pThis)) {
-		free(pThis);
+		EL_FREE(pThis);
 		return NULL;
 	}
 
@@ -130,13 +132,13 @@ str *elstrCreateFromELStr(str *pStr) {
 	if(pStr == NULL || isNaS(pStr))
 		return NULL;
 
-	str *pThis = calloc(1, sizeof(str));
+	str *pThis = EL_CALLOC(1, sizeof(str));
 	if(pThis == NULL)
 		return NULL;
 
 	elstrEnsureCapacity(pThis, pStr->nLength + 1);
 	if(isNaS(pThis)) {
-		free(pThis);
+		EL_FREE(pThis);
 		return NULL;
 	}
 
@@ -169,13 +171,13 @@ str *elstrCreateFromCSubStr(const char *sz, int nIndex, size_t nCount) {
 	if(nIndex + nCount > nLen)
 		nCount = nLen - nIndex;
 
-	str *pThis = calloc(1, sizeof(str));
+	str *pThis = EL_CALLOC(1, sizeof(str));
 	if(pThis == NULL)
 		return NULL;
 
 	elstrEnsureCapacity(pThis, nCount + 1);
 	if(isNaS(pThis)) {
-		free(pThis);
+		EL_FREE(pThis);
 		return NULL;
 	}
 
@@ -207,17 +209,57 @@ str *elstrCreateFromELSubStr(str *pStr, int nIndex, size_t nCount) {
 	if(nIndex + nCount > pStr->nLength)
 		nCount = pStr->nLength - nIndex;
 
-	str *pThis = calloc(1, sizeof(str));
+	str *pThis = EL_CALLOC(1, sizeof(str));
 	if(pThis == NULL)
 		return NULL;
 
 	elstrEnsureCapacity(pThis, nCount + 1);
 	if(isNaS(pThis)) {
-		free(pThis);
+		EL_FREE(pThis);
 		return NULL;
 	}
 
 	strncpy(pThis->szBuf, pStr->szBuf + nIndex, nCount);
+
+	elstrSetLength(pThis, nCount);
+
+	return pThis;
+}
+
+/**
+ * Creates new string and initializes it with the specified @b int value  
+ * converted to string.
+ * @param  nValue [description]
+ * @return        Newly created dynamic string (or NULL if an error occured).
+ */
+str *elstrCreateFromInt(int nValue) {
+	char arrBuf[32];
+
+	char *p = arrBuf + sizeof(arrBuf) - 1;
+	unsigned int nV = (nValue > 0) ? nValue : -nValue;
+	do {
+		*p-- = '0' + (nV % 10);
+		nV /= 10;
+	} while(nV != 0);
+
+	if(nValue < 0)
+		*p-- = '-';
+
+	p++;
+
+	str *pThis = EL_CALLOC(1, sizeof(str));
+	if(pThis == NULL)
+		return NULL;
+
+	size_t nCount = sizeof(arrBuf) - (p - arrBuf);
+
+	elstrEnsureCapacity(pThis, nCount + 1);
+	if(isNaS(pThis)) {
+		EL_FREE(pThis);
+		return NULL;
+	}
+
+	strncpy(pThis->szBuf, p, nCount);
 
 	elstrSetLength(pThis, nCount);
 
@@ -259,7 +301,7 @@ str *elstrCreateFromFileCStr(const char *szFullName) {
 		return NULL;
 	}
 
-	str *pThis = calloc(1, sizeof(str));
+	str *pThis = EL_CALLOC(1, sizeof(str));
 	if(pThis == NULL) {
 		fclose(stream);
 		return NULL;
@@ -268,7 +310,7 @@ str *elstrCreateFromFileCStr(const char *szFullName) {
 	elstrEnsureCapacity(pThis, nnSize + 1);
 	if(isNaS(pThis)) {
 		fclose(stream);
-		free(pThis);
+		EL_FREE(pThis);
 		return NULL;
 	}
 
@@ -276,7 +318,7 @@ str *elstrCreateFromFileCStr(const char *szFullName) {
 	if(nCount < nnSize) {
 		fclose(stream);
 		makeNaS(pThis);
-		free(pThis);
+		EL_FREE(pThis);
 		return NULL;
 	}
 
@@ -318,7 +360,7 @@ str *elstrCreateEmptyFixed(char *szBufferToUse, size_t nCapacity) {
 	if(szBufferToUse == NULL || nCapacity == 0) 
 		return NULL;
 
-	str *pThis = calloc(1, sizeof(str));
+	str *pThis = EL_CALLOC(1, sizeof(str));
 	if(pThis == NULL)
 		return NULL;
 
@@ -409,9 +451,9 @@ void elstrDestroy(str *pThis) {
 		return;
 
 	if(!isFixed(pThis) && pThis->szBuf != NULL) 
-		free(pThis->szBuf);
+		EL_FREE(pThis->szBuf);
 	if(!isPreallocated(pThis)) 
-		free(pThis);	
+		EL_FREE(pThis);	
 }
 
 /**
@@ -1310,7 +1352,7 @@ str **elstrSplitByChars(str *pThis, char arrChars[], size_t nCountChars,
 		return NULL;
 	
 	int nCapacitySubstr = 2;
-	str **pSubstr = malloc(sizeof(str*) * nCapacitySubstr);
+	str **pSubstr = EL_ALLOC(sizeof(str*) * nCapacitySubstr);
 	if (pSubstr == NULL) 
 		return NULL;
 
@@ -1334,7 +1376,7 @@ str **elstrSplitByChars(str *pThis, char arrChars[], size_t nCountChars,
 				if (pSubstrNew == NULL) {
 					for (int j = 0; j < nCountSubstr; j++) 
 						elstrDestroy(pSubstr[j]);
-					free(pSubstr);
+					EL_FREE(pSubstr);
 					return NULL;
 				}
 				pSubstr = pSubstrNew;
@@ -1346,7 +1388,7 @@ str **elstrSplitByChars(str *pThis, char arrChars[], size_t nCountChars,
 				if(pSubstr[nCountSubstr] == NULL) {
 					for (int j = 0; j < nCountSubstr; j++) 
 						elstrDestroy(pSubstr[j]);
-					free(pSubstr);
+					EL_FREE(pSubstr);
 					return NULL;
 				}
 				nCountSubstr++;
@@ -1362,7 +1404,7 @@ str **elstrSplitByChars(str *pThis, char arrChars[], size_t nCountChars,
 		if(pSubstr[nCountSubstr] == NULL) {
 			for (int j = 0; j < nCountSubstr; j++) 
 				elstrDestroy(pSubstr[j]);
-			free(pSubstr);
+			EL_FREE(pSubstr);
 			return NULL;
 		}
 		nCountSubstr++;
@@ -1436,7 +1478,7 @@ size_t elstrMBCreateNGrams(str *pThis, size_t nN, void *pNGramsArr,
 	str* pStrCur = NULL;
 	if(pNGramsArr != NULL) {
 		if(nSize == 0) {
-			pNGrams = malloc(sizeof(str*) * *pCountNGrams);
+			pNGrams = EL_ALLOC(sizeof(str*) * *pCountNGrams);
 			if (pNGrams == NULL) 
 				return 0;
 			*((str***)pNGramsArr) = pNGrams;
@@ -1481,7 +1523,7 @@ size_t elstrMBCreateNGrams(str *pThis, size_t nN, void *pNGramsArr,
 				if(nSize == 0) {
 					for (int j = 0; j < nNGramsCount; j++) 
 						elstrDestroy(pNGrams[j]);
-					free(pNGrams);
+					EL_FREE(pNGrams);
 				}
 			}
 
@@ -1508,7 +1550,7 @@ size_t elstrMBCreateNGrams(str *pThis, size_t nN, void *pNGramsArr,
 					if(pNGrams[nNGramsCount] == NULL) {
 						for (int j = 0; j < nNGramsCount; j++) 
 							elstrDestroy(pNGrams[j]);
-						free(pNGrams);
+						EL_FREE(pNGrams);
 
 						return 0;
 					}
@@ -1545,7 +1587,7 @@ size_t elstrMBCreateNGrams(str *pThis, size_t nN, void *pNGramsArr,
 				if(pNGrams[nNGramsCount] == NULL) {
 					for (int j = 0; j < nNGramsCount; j++) 
 						elstrDestroy(pNGrams[j]);
-					free(pNGrams);
+					EL_FREE(pNGrams);
 
 					return 0;
 				}
@@ -1619,7 +1661,7 @@ void elstrArrayELStrDestroy(str **pStrings, size_t nCountStrings) {
 		for (int i = 0; i < nCountStrings; i++) {
 			elstrDestroy(pStrings[i]);
 		}
-		free(pStrings);
+		EL_FREE(pStrings);
 	}
 }
 

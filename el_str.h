@@ -66,6 +66,7 @@ str *elstrCreateFromCStr(const char *sz);
 str *elstrCreateFromELStr(str *pStr);
 str *elstrCreateFromCSubStr(const char *sz, int nIndex, size_t nCount);
 str *elstrCreateFromELSubStr(str *pStr, int nIndex, size_t nCount);
+str *elstrCreateFromInt(int nValue);
 str *elstrCreateFromFileCStr(const char *szFullName);
 str *elstrCreateFromFileELStr(str *pStr);
 str *elstrCreateEmptyFixed(char *szBufferToUse, size_t nCapacity);
