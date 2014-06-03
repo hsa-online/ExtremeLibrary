@@ -1,5 +1,5 @@
 ExtremeLibrary is a **pure C** library containing helpful (I hope) utility routines for C programmers.
-Now the "Dynamic strings" part of the library is released.
+Now the "Dynamic strings" and "Double-linked lists" parts of the library are released.
 
 ## Description ##
 
@@ -39,6 +39,47 @@ Fixed strings can be created with elstrCreateFixed(). They use buffers prealloca
 externally so they can't grow. These strings are extremely helpful when data locality
 is important. They may work much faster than their "variable size" counterparts in 
 some circumstances. 
+
+To create new double-linked list of strings use: 
+```C
+dlist *pDList = eldlistCreate(EL_CB_DATA_DESTRUCTOR(elstrDestroy),
+	EL_CB_DATA_COMPARER(elstrIsEqualToELStr));
+```
+
+Now add 10 dynamic strings to the list:
+```C
+for(int i = 0; i < 10; i++) {
+	eldlistAddLast(pDList, elstrCreateFromInt(i * 100));
+```
+
+Iterate through the list:
+```C
+printf("Forward:\n");
+dlist_iterator *it;
+for(it = eldlistBegin(pDList); 
+	!eldlistIteratorsAreEqual(it, eldlistEnd(pDList)); 
+	eldlistIteratorNext(it)) {
+	
+	printf("\"%s\"\n", elstrGetRawBuf(eldlistIteratorGetData(it)));
+}
+eldlistIteratorDestroy(it);
+```
+
+Print all strings "in one row":
+```C
+bool printString(str *pStr) {
+	printf("\"%s\"\n", elstrGetRawBuf(pStr));
+	return true;
+}
+...
+eldlistForEach(pDList, EL_CB_FOREACH(printString));
+...
+```
+
+Good idea is to not forget to destroy double-linked list with all its contents:
+```C
+eldlistDestroy(pDList);
+```
 
 ### Names of the functions ###
 
