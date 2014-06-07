@@ -1,4 +1,4 @@
-/* Extreme Library (EL). Double linked lists. 
+/* Extreme Library (EL). Doubly linked lists. 
  * Copyright (c) 2014 Sergei Hrushev [hrushev DOG gmail DOT com]
  *
  * This program is free software: you can redistribute it and/or modify
@@ -31,7 +31,7 @@ typedef enum {
 } el_direction;
 
 /** 
- * @brief Holds the data of double linked list  node.
+ * @brief Holds the data of doubly linked list  node.
  */
 typedef struct eldlist_node {
 	struct eldlist_node *pPrev; /**< Pointer to previous node. */
@@ -40,7 +40,7 @@ typedef struct eldlist_node {
 } eldlist_node;
 
 /** 
- * @brief Double linked list.
+ * @brief Doubly linked list.
  */
 typedef struct dlist {
 	eldlist_node *pHead; /**< Pointer to head of the list. */
@@ -53,7 +53,7 @@ typedef struct dlist {
 } dlist;
 
 /** 
- * @brief Double linked list iterator.
+ * @brief Doubly linked list iterator.
  */
 typedef struct dlist_iterator {
 	el_direction nDirection; /**< Iterator direction. */

@@ -1,4 +1,4 @@
-/* Extreme Library (EL). Double linked lists. 
+/* Extreme Library (EL). Doubly linked lists. 
  * Copyright (c) 2014 Sergei Hrushev [hrushev DOG gmail DOT com]
  *
  * This program is free software: you can redistribute it and/or modify
@@ -32,10 +32,10 @@ dlist_iterator el_dlist_iterator_end = {EL_DIR_FORWARD, NULL};
 dlist_iterator el_dlist_iterator_rend = {EL_DIR_BACKWARD, NULL};
 
 /**
- * Creates new double-linked list node and initializes it with the data 
+ * Creates new doubly linked list node and initializes it with the data 
  * specified.
  * @param  pData Node data.
- * @return       Newly created double-linked list node (or NULL if an error 
+ * @return       Newly created doubly linked list node (or NULL if an error 
  * occured).
  */
 eldlist_node *eldlistNodeCreate(void *pData) {
@@ -48,9 +48,9 @@ eldlist_node *eldlistNodeCreate(void *pData) {
 }
 
 /**
- * Destroys the double-linked list node and frees its data. 
- * @param pThis  Double-linked list node to be destroyed.
- * @param pDList Double-linked list responsible to free node's data.
+ * Destroys the doubly linked list node and frees its data. 
+ * @param pThis  Doubly linked list node to be destroyed.
+ * @param pDList Doubly linked list responsible to free node's data.
  */
 void eldlistNodeDestroy(eldlist_node *pThis, dlist *pDList) {
 	if(isInvalidNode(pThis))
@@ -65,10 +65,10 @@ void eldlistNodeDestroy(eldlist_node *pThis, dlist *pDList) {
 }
 
 /**
- * Creates new double-linked list iterator.
+ * Creates new doubly linked list iterator.
  * @param  nDirection Iterator's direction.
  * @param  pNode      Starting node.
- * @return            Newly created double-linked list iterator (or NULL if an 
+ * @return            Newly created doubly linked list iterator (or NULL if an 
  * error occured).
  */
 dlist_iterator *eldlistIteratorCreate(el_direction nDirection, 
@@ -85,8 +85,8 @@ dlist_iterator *eldlistIteratorCreate(el_direction nDirection,
 }
 
 /**
- * Destroys the double-linked list iterator.
- * @param pThis Double-linked list iterator to be destroyed.
+ * Destroys the doubly linked list iterator.
+ * @param pThis Doubly linked list iterator to be destroyed.
  */
 void eldlistIteratorDestroy(dlist_iterator *pThis) {
 	if(isInvalidIterator(pThis))
@@ -105,8 +105,8 @@ extern bool eldlistIteratorsAreEqual(dlist_iterator *pIterator1,
 	dlist_iterator *pIterator2);
 
 /**
- * Moves iterator to the next item of double-linked list.
- * @param  pThis Double-linked list iterator.
+ * Moves iterator to the next item of doubly linked list.
+ * @param  pThis Doubly linked list iterator.
  * @return       True if operation was successful.
  */
 bool eldlistIteratorNext(dlist_iterator *pThis) {
@@ -129,9 +129,9 @@ bool eldlistIteratorNext(dlist_iterator *pThis) {
 }
 
 /**
- * Returns the data associated with the current item of the double-linked list 
+ * Returns the data associated with the current item of the doubly linked list 
  * iterated.
- * @param  pThis Double-linked list iterator.
+ * @param  pThis Doubly linked list iterator.
  * @return       Current item's data or NULL if an item has no data or an error 
  * occured.
  */
@@ -145,12 +145,12 @@ void *eldlistIteratorGetData(dlist_iterator *pThis) {
 }
 
 /**
- * Creates new empty double-linked list.
+ * Creates new empty doubly linked list.
  * @param  dataDestructor Pointer to callback function which will be called for 
  * each item to destroy it.
  * @param  dataComparer   Pointer to callback function which will be called to 
  * compare item data.
- * @return                Newly created double-linked list (or NULL if an error 
+ * @return                Newly created doubly linked list (or NULL if an error 
  * occured).
  */
 dlist *eldlistCreate(void (*dataDestructor)(void *pData),
@@ -167,9 +167,9 @@ dlist *eldlistCreate(void (*dataDestructor)(void *pData),
 }
 
 /**
- * Destroys all nodes of double-linked list. Doesn't change the state of the 
+ * Destroys all nodes of doubly linked list. Doesn't change the state of the 
  * list. Should be called internally only.
- * @param  pThis Double-linked list.
+ * @param  pThis Doubly linked list.
  */
 void eldlistAllNodesDestroy(dlist *pThis) {
 	if(isInvalid(pThis))
@@ -187,8 +187,8 @@ void eldlistAllNodesDestroy(dlist *pThis) {
 }
 
 /**
- * Destroys the double-linked list.
- * @param pThis Double-linked list to be destroyed.
+ * Destroys the doubly linked list.
+ * @param pThis Doubly linked list to be destroyed.
  */
 void eldlistDestroy(dlist *pThis) {
 	if(isInvalid(pThis))
@@ -201,7 +201,7 @@ void eldlistDestroy(dlist *pThis) {
 
 /**
  * Returns number of nodes in the list.
- * @param  pThis Double-linked list.
+ * @param  pThis Doubly linked list.
  * @return       Number of nodes in the list.
  */
 size_t elstrGetCount(dlist *pThis)  {
@@ -213,8 +213,8 @@ size_t elstrGetCount(dlist *pThis)  {
 
 
 /**
- * Clears the double-linked list.
- * @param  pThis Double-linked list.
+ * Clears the doubly linked list.
+ * @param  pThis Doubly linked list.
  * @return       True if operation was successful.
  */
 bool eldlistClear(dlist *pThis) {
@@ -231,10 +231,10 @@ bool eldlistClear(dlist *pThis) {
 }
 
 /**
- * Adds new node at the beggining of double-linked list.
- * @param  pThis Double-linked list.
+ * Adds new node at the beggining of doubly linked list.
+ * @param  pThis Doubly linked list.
  * @param  pNode The node to be added.
- * @return       Added node.
+ * @return       Added node (or NULL if an error occured).
  */
 eldlist_node *eldlistAddFirstNode(dlist *pThis, eldlist_node *pNode) {
 	if(isInvalid(pThis) || pNode == NULL)
@@ -255,8 +255,8 @@ eldlist_node *eldlistAddFirstNode(dlist *pThis, eldlist_node *pNode) {
 }
 
 /**
- * Adds the data at the beggining of double-linked list.
- * @param  pThis Double-linked list.
+ * Adds the data at the beggining of doubly linked list.
+ * @param  pThis Doubly linked list.
  * @param  pData Data to be added to the list
  * @return       Newly created node (or NULL if an error occured).
  */
@@ -268,10 +268,10 @@ eldlist_node *eldlistAddFirst(dlist *pThis, void *pData) {
 }
 
 /**
- * Adds new node at the end of double-linked list.
- * @param  pThis Double-linked list.
+ * Adds new node at the end of doubly linked list.
+ * @param  pThis Doubly linked list.
  * @param  pNode The node to be added.
- * @return       Added node.
+ * @return       Added node (or NULL if an error occured).
  */
 eldlist_node *eldlistAddLastNode(dlist *pThis, eldlist_node *pNode) {
 	if(isInvalid(pThis) || pNode == NULL)
@@ -292,8 +292,8 @@ eldlist_node *eldlistAddLastNode(dlist *pThis, eldlist_node *pNode) {
 }
 
 /**
- * Adds the data at the end of double-linked list.
- * @param  pThis Double-linked list.
+ * Adds the data at the end of doubly linked list.
+ * @param  pThis Doubly linked list.
  * @param  pData Data to be added to the list
  * @return       Newly created node (or NULL if an error occured).
  */
@@ -305,8 +305,8 @@ eldlist_node *eldlistAddLast(dlist *pThis, void *pData) {
 }
 
 /**
- * Returns a first node of double-linked list.
- * @param  pThis Double-linked list.
+ * Returns a first node of doubly linked list.
+ * @param  pThis Doubly linked list.
  * @return       First node. Returns NULL if the list is empty or an error 
  * occured.
  */
@@ -318,8 +318,8 @@ eldlist_node *eldlistGetFirstNode(dlist *pThis) {
 }
 
 /**
- * Returns a last node of double-linked list.
- * @param  pThis Double-linked list.
+ * Returns a last node of doubly linked list.
+ * @param  pThis Doubly linked list.
  * @return       Last node. Returns NULL if the list is empty or an error 
  * occured.
  */
@@ -333,7 +333,7 @@ eldlist_node *eldlistGetLastNode(dlist *pThis) {
 /**
  * Searches for the first node containing the data specified.
  * <br> Complexity of this function is O(n).
- * @param  pThis Double-linked list.
+ * @param  pThis Doubly linked list.
  * @param  pData Node data.
  * @return       First node containing the data specified. Returns NULL if the 
  * node is not found or an error occured.
@@ -362,7 +362,7 @@ eldlist_node *eldlistSearch(dlist *pThis, void *pData) {
 /**
  * Searches for the first node containing the data specified and removes it from 
  * the list.
- * @param  pThis Double-linked list.
+ * @param  pThis Doubly linked list.
  * @param  pData The data of node to be removed.
  * @return       True if node was actually removed.
  */
@@ -377,7 +377,7 @@ bool eldlistRemove(dlist *pThis, void *pData) {
 
 /**
  * Removes the node specified from the list.
- * @param  pThis Double-linked list.
+ * @param  pThis Doubly linked list.
  * @param  pNode Node to be removed.
  * @return       True if node was actually removed.
  */
@@ -418,42 +418,42 @@ bool eldlistRemoveNode(dlist *pThis, eldlist_node *pNode) {
 }
 
 /**
- * Returns an iterator pointing to the first element of double-linked list.
- * @param  pThis Double-linked list.
- * @return       An iterator to the beginning of double-linked list.
+ * Returns an iterator pointing to the first element of doubly linked list.
+ * @param  pThis Doubly linked list.
+ * @return       An iterator to the beginning of doubly linked list.
  */
 extern dlist_iterator *eldlistBegin(dlist *pThis);
 
 /**
- * Returns an iterator referring to the past-the-end element of double-linked 
+ * Returns an iterator referring to the past-the-end element of doubly linked 
  * list.
- * @param  pThis Double-linked list.
- * @return       An iterator to the element past the end of the double-linked 
+ * @param  pThis Doubly linked list.
+ * @return       An iterator to the element past the end of the doubly linked 
  * list.
  */
 extern dlist_iterator *eldlistEnd(dlist *pThis);
 
 /**
- * Returns a reverse iterator pointing to the last element of double-linked 
+ * Returns a reverse iterator pointing to the last element of doubly linked 
  * list.
- * @param  pThis Double-linked list.
- * @return       An iterator to the end of double-linked list.
+ * @param  pThis Doubly linked list.
+ * @return       An iterator to the end of doubly linked list.
  */
 extern dlist_iterator *eldlistRBegin(dlist *pThis);
 
 /**
  * Returns an iterator referring to the element prior to the first elemet of 
- * double-linked list.
- * @param  pThis Double-linked list.
+ * doubly linked list.
+ * @param  pThis Doubly linked list.
  * @return       An iterator to the element prior to the first elemet of the 
- * double-linked list.
+ * doubly linked list.
  */
 extern dlist_iterator *eldlistREnd(dlist *pThis);
 
 /**
- * Iterates through the double-linked list and calls specified function for each 
+ * Iterates through the doubly linked list and calls specified function for each 
  * item of the list. If function returns @b false - stops iteration.
- * @param pThis        Double-linked list.
+ * @param pThis        Doubly linked list.
  * @param dataCallback Callback function to be called for each item of the list.
  */
 void eldlistForEach(dlist *pThis, bool (*dataCallback)(void *pData)) {

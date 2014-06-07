@@ -1,5 +1,5 @@
 ExtremeLibrary is a **pure C** library containing helpful (I hope) utility routines for C programmers.
-Now the dynamic strings and double-linked lists parts of the library are released.
+Now the dynamic strings and doubly linked lists parts of the library are released.
 
 ## Description ##
 
@@ -37,10 +37,10 @@ the buffer size is allocated "when necessary" and may grow.
  
 Fixed strings can be created with elstrCreateFixed(). They use buffers preallocated
 externally so they can't grow. These strings are extremely helpful when data locality
-is important. They may work much faster than their "variable size" counterparts in 
-some circumstances. 
+is important. They may work much more faster than their "variable size" counterparts 
+in some circumstances. 
 
-To create new double-linked list of strings use: 
+To create new doubly linked list of strings use: 
 ```C
 dlist *pDList = eldlistCreate(EL_CB_DATA_DESTRUCTOR(elstrDestroy),
 	EL_CB_DATA_COMPARER(elstrIsEqualToELStr));
@@ -76,7 +76,7 @@ eldlistForEach(pDList, EL_CB_FOREACH(printString));
 ...
 ```
 
-Good idea is to not forget to destroy double-linked list with all its contents:
+Good idea is to not forget to destroy the doubly linked list with all of its contents:
 ```C
 eldlistDestroy(pDList);
 ```

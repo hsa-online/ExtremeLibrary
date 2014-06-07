@@ -45,6 +45,9 @@
  */
 #define EL_STR_FLAG_PREALLOC	4
  
+/**
+ * Maximal number of multibyte characters this string may hold.
+ */
 #define EL_STR_MB_LENGTH_MAX (SIZE_MAX >> EL_STR_NUM_FLAGS)
 
 #define isNaS(s) (((s)->nExtra & EL_STR_FLAG_NAS) == EL_STR_FLAG_NAS)
@@ -229,7 +232,7 @@ str *elstrCreateFromELSubStr(str *pStr, int nIndex, size_t nCount) {
 /**
  * Creates new string and initializes it with the specified @b int value  
  * converted to string.
- * @param  nValue [description]
+ * @param  nValue Value to create the string from.
  * @return        Newly created dynamic string (or NULL if an error occured).
  */
 str *elstrCreateFromInt(int nValue) {
@@ -243,9 +246,9 @@ str *elstrCreateFromInt(int nValue) {
 	} while(nV != 0);
 
 	if(nValue < 0)
-		*p-- = '-';
-
-	p++;
+		*p = '-';
+	else
+		p++;
 
 	str *pThis = EL_CALLOC(1, sizeof(str));
 	if(pThis == NULL)
@@ -1186,11 +1189,22 @@ int elstrCompareCStr(str *pThis, const char *sz) {
 }
 
 /**
- * Checks if the dynamic string is equal to another dynamixc string.
+ * Checks if the dynamic string is equal to C style string.
+ * @param  pThis Dynamic string.
+ * @param  sz    C style string to check equality with.
+ * @return       @b True if the dynamic string is equal to C style string, 
+ * otherwise @b false.
+ */
+bool elstrIsEqualToCStr(str *pThis, const char *sz) {
+	return elstrCompareCStr(pThis, sz) == 0;
+}
+
+/**
+ * Checks if the dynamic string is equal to another dynamic string.
  * @param  pThis Dynamic string.
  * @param  pStr  Dynamic string to check equality with.
- * @return       True if the dynamic string is equal to another one, otherwise 
- * false.
+ * @return       @b True if the dynamic string is equal to another one, 
+ * otherwise @b false.
  */
 bool elstrIsEqualToELStr(str *pThis, str *pStr) {
 	if(isNaS(pThis))
@@ -1210,7 +1224,7 @@ bool elstrIsEqualToELStr(str *pThis, str *pStr) {
  * yes, otherwise returns false.
  * @param  pThis Dynamic string.
  * @param  sz    Prefix C style string.
- * @return       True if the dynamic string starts from a specified prefix.
+ * @return       @b True if the dynamic string starts from a specified prefix.
  */
 bool elstrHasPrefixCStr(str *pThis, char *sz) {
 	if(isNaS(pThis))
@@ -1335,10 +1349,10 @@ int elstrIndexOfCharFrom(str *pThis, char ch, int nIndexFrom) {
  * @param  arrChars         An array of characters where to split the dynamic 
  * string.
  * @param  nCountChars      Number of characters in the @e arrChars array.
- * @param  bRemoveEmpty     This flag indicates if emty strings should also be 
+ * @param  bRemoveEmpty     This flag indicates if empty strings should also be 
  * returned or not.
  * @param  pCountSubstrings Number of generated substrings is returned here.
- * @return                  An array of substrings or NULL is error occured.
+ * @return                  An array of substrings or NULL if error occured.
  */
 str **elstrSplitByChars(str *pThis, char arrChars[], size_t nCountChars, 
 	bool bRemoveEmpty, size_t *pCountSubstrings) {
@@ -1416,7 +1430,7 @@ str **elstrSplitByChars(str *pThis, char arrChars[], size_t nCountChars,
 
 /**
  * Splits the dynamic string to substrings at characters from the @e arrChars
- * array. Returns an array of substrings. Empty substrings are also returned.
+ * array. Returns an array of substrings. Empty substrings are NOT returned.
  * @param  pThis            Dynamic string.
  * @param  arrChars         An array of characters where to split the dynamic 
  * string.
@@ -1429,6 +1443,97 @@ str **elstrSplitByCharsNoEmpty(str *pThis, char arrChars[], size_t nCountChars,
 
 	return elstrSplitByChars(pThis, arrChars, nCountChars, true, 
 		pCountSubstrings);
+}
+
+/**
+ * Splits the dynamic string by characters from the @e arrChars array. Returns
+ * a doubly linked list of substrings.
+ * @param  pThis        Dynamic string.
+ * @param  arrChars     An array of characters where to split the dynamic 
+ * string.
+ * @param  nCountChars  Number of characters in the @e arrChars array.
+ * @param  bRemoveEmpty This flag indicates if empty strings should be added
+ * to the list or not.
+ * @return              Doubly linked list of substrings or NULL if error 
+ * occured.
+ */
+dlist *elstrSplitByCharsAsList(str *pThis, char arrChars[], size_t nCountChars, 
+	bool bRemoveEmpty) {
+
+	if(isNaS(pThis))
+		return NULL;
+
+	if(pThis->nLength == 0 || nCountChars == 0)
+		return NULL;
+
+	dlist *pDList = eldlistCreate(EL_CB_DATA_DESTRUCTOR(elstrDestroy),
+		EL_CB_DATA_COMPARER(elstrIsEqualToELStr));
+
+	if(pDList != NULL) {
+		int nStart = 0;
+
+		for(size_t i = 0; i < pThis->nLength; i++) {
+			bool bSplit = false;
+			int j;
+			for(j = 0; j < nCountChars; j++)
+				if(pThis->szBuf[i] == arrChars[j]) {
+					bSplit = true;
+					break;
+				}
+
+			if(bSplit) {
+				if(i - nStart > 0 || !bRemoveEmpty) {
+					str *pSubstr = elstrCreateFromELSubStr(pThis, nStart, 
+						i - nStart);
+					if(pSubstr == NULL) {
+						eldlistDestroy(pDList);	
+						pDList = NULL;
+						break;
+					}
+					if(eldlistAddLast(pDList, pSubstr) == NULL) {
+						eldlistDestroy(pDList);	
+						pDList = NULL;
+						break;
+					}
+				}
+
+				nStart = i + 1;
+			}
+		}
+
+		if(pThis->nLength - nStart > 0 || !bRemoveEmpty) {
+			str *pSubstr = elstrCreateFromELSubStr(pThis, nStart, 
+				pThis->nLength - nStart);
+
+			if(pSubstr == NULL) {
+				eldlistDestroy(pDList);	
+				pDList = NULL;
+			} else
+				if(eldlistAddLast(pDList, pSubstr) == NULL) {
+					eldlistDestroy(pDList);	
+					pDList = NULL;
+				}
+		}
+	}
+
+	return pDList;
+}
+
+/**
+ * Splits the dynamic string to substrings at characters from the @e arrChars
+ * array. Returns the doubly linked list of substrings. Empty substrings are NOT
+ * returned.
+ * @param  pThis            Dynamic string.
+ * @param  arrChars         An array of characters where to split the dynamic 
+ * string.
+ * @param  nCountChars      Number of characters in the @e arrChars array.
+ * @return                  Doubly linked list of substrings or NULL is error 
+ * occured.
+ */
+dlist *elstrSplitByCharsNoEmptyAsList(str *pThis, char arrChars[], 
+	size_t nCountChars) {
+
+	return elstrSplitByCharsAsList(pThis, arrChars, nCountChars, true);
 }
 
 /**

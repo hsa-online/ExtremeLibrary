@@ -21,6 +21,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+#include "el_dlist.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -108,6 +110,7 @@ void elstrTrimChars(str *pThis, char arrChars[], size_t nCountChars);
 void elstrReverse(str *pThis);
 void elstrReplaceChar(str *pThis, char chOld, char chNew);
 int elstrCompareCStr(str *pThis, const char *sz);
+bool elstrIsEqualToCStr(str *pThis, const char *sz);
 bool elstrIsEqualToELStr(str *pThis, str *pStr);
 bool elstrHasPrefixCStr(str *pThis, char *sz);
 bool elstrHasPrefixELStr(str *pThis, str *pStr);
@@ -119,6 +122,10 @@ str **elstrSplitByChars(str *pThis, char arrChars[], size_t nCountChars,
 	bool bRemoveEmpty, size_t *pCountSubstrings);
 str **elstrSplitByCharsNoEmpty(str *pThis, char arrChars[], size_t nCountChars, 
 	size_t *pCountSubstrings);
+dlist *elstrSplitByCharsAsList(str *pThis, char arrChars[], size_t nCountChars, 
+	bool bRemoveEmpty);
+dlist *elstrSplitByCharsNoEmptyAsList(str *pThis, char arrChars[], 
+	size_t nCountChars);
 size_t elstrMBCreateNGrams(str *pThis, size_t nN, void *pNGrams, 
 	size_t nSize, size_t *pCountNGrams);
 float elstrMBCompareNGrams(str **pNGrams1, size_t nCountNGrams1, 
