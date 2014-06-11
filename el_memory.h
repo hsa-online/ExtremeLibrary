@@ -26,11 +26,18 @@ extern "C" {
  * Allows to change dynamic memory allocation logic for the entire library.
  */
 #define EL_ALLOC malloc
+ 
 /**
  * Allows to change dynamic memory allocation and initialization logic for the 
  * entire library.
  */
 #define EL_CALLOC calloc
+
+/**
+ * Allows to change dynamic memory reallocation logic for the entire library.
+ */
+#define EL_REALLOC realloc
+
 /**
  * Allows to change dynamic memory deallocation logic for the entire library.
  */

@@ -473,3 +473,31 @@ void eldlistForEach(dlist *pThis, bool (*dataCallback)(void *pData)) {
 	}
 	eldlistIteratorDestroy(it);
 }
+
+/**
+ * Iterates through the doubly linked list and calls specified function for each 
+ * item of the list. Passes the pointer to custom data to the callback function.
+ * If function returns @b false - stops iteration.
+ * @param pThis        Doubly linked list.
+ * @param dataCallback Callback function to be called for each item of the list.
+ * @param pEx          Pointer to custom data to be sent to callback.
+ */
+void eldlistForEachEx(dlist *pThis, 
+	bool (*dataCallbackEx)(void *pData, void *pEx), void *pEx) {
+
+	if(isInvalid(pThis))
+		return;
+
+	if(dataCallbackEx == NULL)
+		return;
+
+	dlist_iterator *it;
+	for(it = eldlistBegin(pThis); 
+		!eldlistIteratorsAreEqual(it, eldlistEnd(pThis)); 
+		eldlistIteratorNext(it)) {
+		
+		if(!dataCallbackEx(eldlistIteratorGetData(it), pEx))
+			break;
+	}
+	eldlistIteratorDestroy(it);
+}

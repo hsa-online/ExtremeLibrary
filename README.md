@@ -1,5 +1,5 @@
 ExtremeLibrary is a **pure C** library containing helpful (I hope) utility routines for C programmers.
-Now the dynamic strings and doubly linked lists parts of the library are released.
+Released parts of the library: **dynamic strings**, **doubly linked lists** and **bit sets**.
 
 ## Description ##
 

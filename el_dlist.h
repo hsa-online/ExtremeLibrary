@@ -31,7 +31,7 @@ typedef enum {
 } el_direction;
 
 /** 
- * @brief Holds the data of doubly linked list  node.
+ * @brief Holds the data of doubly linked list node.
  */
 typedef struct eldlist_node {
 	struct eldlist_node *pPrev; /**< Pointer to previous node. */
@@ -75,6 +75,11 @@ extern dlist_iterator el_dlist_iterator_rend;
  * @brief Pointer to callback function which's called by foreach() enumerator.
  */
 #define EL_CB_FOREACH(s) (bool (*)(void *))(s)
+/** 
+ * @brief Pointer to extended callback function which's called by foreachex() 
+ * enumerator.
+ */
+#define EL_CB_FOREACH_EX(s) (bool (*)(void *, void *))(s)
 
 eldlist_node *eldlistNodeCreate(void *pData);
 void eldlistNodeDestroy(eldlist_node *pThis, dlist *pDList);
@@ -118,6 +123,8 @@ inline dlist_iterator *eldlistREnd(dlist *pThis)  {
 	return &el_dlist_iterator_rend;
 }
 void eldlistForEach(dlist *pThis, bool (*dataCallback)(void *pData));
+void eldlistForEachEx(dlist *pThis, 
+	bool (*dataCallbackEx)(void *pData, void *pEx), void *pEx);
 
 #ifdef __cplusplus
 }

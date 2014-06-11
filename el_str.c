@@ -474,7 +474,7 @@ void elstrEnsureCapacity(str *pThis, size_t nCapacity) {
 		if(isFixed(pThis)) {
 			makeNaS(pThis);
 		} else {
-			char *szBufNew = realloc(pThis->szBuf, nCapacity);
+			char *szBufNew = EL_REALLOC(pThis->szBuf, nCapacity);
 			if(szBufNew == NULL) {
 				makeNaS(pThis);
 			} else {
@@ -598,8 +598,7 @@ void elstrSetLength(str *pThis, size_t nLength) {
 
 	clearMBLength(pThis);
 }
-
-// 
+ 
 /** 
  * Sets the length of the string to 0 (this makes the string "empty").
  * <br>Not truncates the data buffer!
@@ -647,6 +646,24 @@ const char *elstrGetRawBuf(str *pThis) {
 	if(isNaS(pThis))
 		return NULL;
 	return pThis->szBuf;
+}
+
+/**
+ * Computes and returns the hash code of dynamic string (Ly-hash algorithm is 
+ * used).
+ * @param  str Dynamic string.
+ * @return     Hash code of the string.
+ */
+uint_fast32_t elstrGetHashCode(str *pThis) {
+	if(isNaS(pThis))
+		return 0;
+
+   uint_fast32_t nHash = 0;
+
+	for(size_t i = 0; i < pThis->nLength; i++)
+        nHash = (nHash * 1664525) + (uint_fast32_t)pThis->szBuf[i] + 1013904223;
+
+    return nHash;
 }
 
 /**
@@ -1027,9 +1044,9 @@ void elstrLTrimChars(str *pThis, char arrChars[], size_t nCountChars) {
 		return;
 
 	int nCount = pThis->nLength;
-	for(int i = 0; i < pThis->nLength; i++) {
+	for(size_t i = 0; i < pThis->nLength; i++) {
 		bool bFound = false;
-		for(int j = 0; j < nCountChars; j++)
+		for(size_t j = 0; j < nCountChars; j++)
 			if(pThis->szBuf[i] == arrChars[j]) {
 				bFound = true;
 				break;

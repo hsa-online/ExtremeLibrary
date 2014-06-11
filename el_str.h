@@ -20,6 +20,7 @@
 
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "el_dlist.h"
 
@@ -87,6 +88,7 @@ void elstrClear(str *pThis);
 size_t elstrGetCapacity(str *pThis);
 size_t elstrGetUnused(str *pThis);
 const char *elstrGetRawBuf(str *pThis);
+uint_fast32_t elstrGetHashCode(str *pThis);
 str *elstrSubString(str *pThis, int nIndex, size_t nCount);
 void elstrAssignFromCStr(str *pThis, const char *sz);
 void elstrAssignFromELStr(str *pThis, str *pStr);
